@@ -1,1 +1,1 @@
-export const DB_NAME = "cfdb"
+export const DB_NAME = "collegefinder"
