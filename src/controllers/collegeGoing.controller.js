@@ -3,18 +3,21 @@ import { ApiError } from "../utils/ApiError";
 import { CollegeGoing } from "../models/collegeGoing.model";
 import { ApiResponse } from "../utils/ApiResponse";
 
-const registerCollegeGoing = asyncHandler(async (req, res) => {
+const registerCollegeGoing = asyncHandler(async (req, res, next) => {
     const { name, username, password, email, college, major, graduationYear, opinion } = req.body;
-
-    if ([name, username, password, email, college, major, graduationYear].some(field => !field || field.trim() === "")) {
+    
+    if (
+        [name, username, password, email, college, major, graduationYear, opinion].some((field) => field?.trim() === "") 
+    ) {
         throw new ApiError(400, "All fields are required");
     }
 
-    const existedUser = await CollegeGoing.findOne({
-        $or: [{ username }, { email }]
+    const existeduser = CollegeGoing.findOne({
+        $or: [{ username }, { email }],
     });
-    if (existedUser) {
-        throw new ApiError(409, "User already exists!");
+
+    if (existeduser) {
+        throw new ApiError(400, "User already exists");
     }
 
     const user = await CollegeGoing.create({
@@ -25,40 +28,18 @@ const registerCollegeGoing = asyncHandler(async (req, res) => {
         college,
         major,
         graduationYear,
-        opinion
+        opinion,
     });
 
-    const createdUser = await CollegeGoing.findById(user._id).select("-password");
+    const token = user.generateToken();
 
-    if (!createdUser) {
-        throw new ApiError(500, "Something went wrong while registering user");
-    }
+    new ApiResponse(res).send({ user, token });
 
-    return res.status(201).json(new ApiResponse(200, createdUser, "User registered successfully!"));
-});
+    next();
 
-const loginCollegeGoing = asyncHandler(async (req, res) => {
 
-    const { email, username, password } = req.body
 
-    if (!username && !email) {
-        throw new ApiError(400, "username or email is required")
-    }
+})
 
-    const user = await CollegeGoing.findOne({
-        $or: [{ username }, { email }]
-    })
+export { registerCollegeGoing }
 
-    if (!user) {
-        throw new ApiError(404, "User does not Exits!")
-    }
-
-    const Valid = user.password === password
-    if (!Valid) {
-        throw new ApiError(401, "Invalid User Credentials")
-    }
-
-    return res.status(200).json(new ApiResponse(200, user, "User logged in successfully!"));
-});
-
-export { registerCollegeGoing, loginCollegeGoing };
