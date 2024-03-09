@@ -1,12 +1,11 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
-import { CollegeGoing } from "../models/collegeGoing.model.js";
+import { CollegeSearching } from "../models/collegeSearching.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { College } from "../models/college.model.js";
 
-const generateAccessToken = async (userId)=>{
+const generateAccessToken = async (userId) => {
     try {
-        const user = await CollegeGoing.findById(userId);
+        const user = await CollegeSearching.findById(userId);
         const accessToken = user.generateToken();
 
         await user.save({ validateBeforeSave: false });
@@ -17,22 +16,16 @@ const generateAccessToken = async (userId)=>{
     }
 }
 
-const registerCollegeGoing = asyncHandler(async (req, res) => {
-    const { name, username, password, email, college, major, graduationYear, opinion } = req.body;
+const registerCollegeSearching = asyncHandler(async (req, res) => {
+    const { name, username, password, email } = req.body;
 
     if (
-        [name, username, password, email, major].some((field) => field?.trim() === "")
+        [name, username, password, email].some((field) => field?.trim() === "")
     ) {
         throw new ApiError(400, "All fields are required");
     }
 
-    // Find the ObjectId of the college document corresponding to the provided college name
-    const collegeDocument = await College.findOne({ name: college });
-    if (!collegeDocument) {
-        throw new ApiError(400, "College not found");
-    }
-
-    const existedUser = await CollegeGoing.findOne({
+    const existedUser = await CollegeSearching.findOne({
         $or: [{ username }, { email }],
     });
 
@@ -40,18 +33,14 @@ const registerCollegeGoing = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Username or Email already exists");
     }
 
-    const user = await CollegeGoing.create({
+    const user = await CollegeSearching.create({
         name,
         username,
         password,
         email,
-        college: collegeDocument._id, // Use ObjectId of the college document
-        major,
-        graduationYear,
-        opinion,
     });
 
-    const createdUser = await CollegeGoing.findById(user._id).select(
+    const createdUser = await CollegeSearching.findById(user._id).select(
         "-password"
     )
 
@@ -64,19 +53,18 @@ const registerCollegeGoing = asyncHandler(async (req, res) => {
     );
 });
 
-
-const loginCollegeGoing = asyncHandler(async (req, res) => {
+const loginCollegeSearching = asyncHandler(async (req, res) => {
     const { username, email, password } = req.body;
 
     if (!username && !password) {
         throw new ApiError(400, "Username or Password are required");
     }
 
-    const user = await CollegeGoing.findOne({
-        $or: [{username}, {email}]
-    }) 
+    const user = await CollegeSearching.findOne({
+        $or: [{ username }, { email }]
+    })
 
-    if(!user) {
+    if (!user) {
         throw new ApiError(404, "User not found");
     }
 
@@ -87,7 +75,7 @@ const loginCollegeGoing = asyncHandler(async (req, res) => {
 
     const accessToken = await generateAccessToken(user._id)
 
-    const loggedInUser = await CollegeGoing.findById(user._id).select("-password");
+    const loggedInUser = await CollegeSearching.findById(user._id).select("-password");
 
     const options = {
         httpOnly: true,
@@ -100,10 +88,10 @@ const loginCollegeGoing = asyncHandler(async (req, res) => {
             accessToken,
         }, "User Logged In Successfully")
     );
-    
+
 });
 
-const logoutCollegeGoing = asyncHandler(async (req, res) => {
+const logoutCollegeSearching = asyncHandler(async (req, res) => {
     const options = {
         httpOnly: true,
         secure: true,
@@ -115,7 +103,7 @@ const logoutCollegeGoing = asyncHandler(async (req, res) => {
 });
 
 export {
-    registerCollegeGoing,
-    loginCollegeGoing,
-    logoutCollegeGoing,
+    registerCollegeSearching,
+    loginCollegeSearching,
+    logoutCollegeSearching,
 };
